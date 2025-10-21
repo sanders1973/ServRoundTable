@@ -22,7 +22,7 @@ const CONFIG_DEFAULTS = {
   DIR: "roundtable",
   POLL_INTERVAL_MS: 10000,
   // ⚠️ Fine-grained token with Contents: Read & Write on target repo
-  GITHUB_TOKEN: "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"
+  GITHUB_TOKEN: "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"
 };
 
 // ======= RUNTIME STATE =======
@@ -311,7 +311,7 @@ async function deleteBySession(session){ const cfg = getConfig(); if (!verifyPas
 async function deleteByTeam(team){ const cfg = getConfig(); const reg = state.teamRegistry.get(team); // verify pass if available
   const stored = getStoredPass(team);
   if (reg && reg.passphrase && stored !== reg.passphrase){ alert(`Enter the passphrase for team "${team}" (switch to it in the header and provide the passphrase) before deleting.`); return; }
-  const ok = confirm(`Delete ALL files for team "${team}" across ALL sessions? This cannot be undone.`); if (!ok) return; const files = await listDirectory(cfg); const targets = files.filter(it => (it.name||'').startsWith(team + ' -- ')); for (const it of targets){ try { const meta = await ghGetContentsMeta(cfg, it.path); if (meta?.sha) await deleteFile(cfg, it.path, meta.sha, `Round Table: delete team ${team}`); } catch(e){ recordApiError(e); }
+  const ok = confirm(`Delete ALL files for team "${team}" across ALL sessions? This cannot be undone.`); if (!ok) return; const files = await listDirectory(cfg); const targets = files.filter(it => (it.name||'').startsWith(team + ' -- ')); for (const it of targets){ try { const meta = await ghGetContentsMeta(cfg, it.path); if (meta?.sha) await deleteFile(cfg, it.path, meta.sha, `Round Table: delete team ${team}`); } catch(e){ recordApiError(e); } }
   // remove registry json
   const regPath = safeJoin(registryDir(cfg), `${team.replace(/[\\/]/g,'-')}.json`); try { const meta = await ghGetContentsMeta(cfg, regPath); if (meta?.sha) await deleteFile(cfg, regPath, meta.sha, `Round Table: remove team registry ${team}`); } catch(e) { /* ignore */ }
   // refresh picker
