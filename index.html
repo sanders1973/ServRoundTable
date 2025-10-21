@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en-au">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Round Table</title>
+  <meta name="description" content="Capture team mood & updates." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%234b6bfb'/%3E%3Ctext x='50' y='58' font-size='46' text-anchor='middle' fill='white' font-family='Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif'%3ERT%3C/text%3E%3C/svg%3E" />
+  <style>
+    /* THEME TOKENS */
+    body { margin:0; font: 14px/1.5 Inter, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+
+    /* Dark = fully black */
+    body[data-theme="dark"]{
+      --bg: #000000;
+      --panel: #000000;
+      --panel-2: #000000;
+      --ink: #e6ebff;
+      --ink-dim: #c4cdfb;
+      --ink-muted: #9aa7ee;
+      --brand: #4b6bfb;
+      --brand-2: #6a8bff;
+      --ok: #2ecc71;
+      --border: rgba(255,255,255,.10);
+      --border-2: rgba(255,255,255,.06);
+      --shadow: 0 10px 30px rgba(0,0,0,.45);
+      --pill-bg: rgba(255,255,255,.06);
+      --pill-border: rgba(255,255,255,.08);
+      --danger: #ff4d4f;
+    }
+    /* Light theme */
+    body[data-theme="light"]{
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --panel-2: #ffffff;
+      --ink: #0b1020;
+      --ink-dim: #1f2937;
+      --ink-muted: #6b7280;
+      --brand: #3658ff;
+      --brand-2: #5e7bff;
+      --ok: #1f9d56;
+      --border: rgba(0,0,0,.12);
+      --border-2: rgba(0,0,0,.06);
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --pill-bg: rgba(0,0,0,.04);
+      --pill-border: rgba(0,0,0,.08);
+      --danger: #d92d2f;
+    }
+
+    html, body { height: 100%; }
+    body { background: var(--bg); color: var(--ink); }
+
+    header { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(120%) blur(6px); background: color-mix(in oklab, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border-2); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .bar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .logo { width:40px; height:40px; display:grid; place-items:center; background: linear-gradient(140deg, var(--brand), var(--brand-2)); color:#fff; border-radius: 12px; font-weight: 800; letter-spacing:.5px; box-shadow: var(--shadow); }
+    .title { font-size: 22px; font-weight: 800; margin:0; letter-spacing:.2px; }
+    .title small { display:block; font-size: 12px; color: var(--ink-muted); font-weight: 600; }
+    .spacer { flex: 1; }
+    .pill { display:inline-flex; align-items:center; gap:10px; padding:8px 12px; border-radius: 999px; background: var(--pill-bg); color: var(--ink); border: 1px solid var(--pill-border); }
+
+    /* Mode toggle segmented control */
+    .mode-toggle { padding: 4px; gap: 4px; }
+    .seg { appearance:none; border:none; padding:8px 10px; border-radius: 8px; font-weight:800; cursor:pointer; color: var(--ink); background: transparent; }
+    .seg.active { background: color-mix(in oklab, var(--brand) 18%, transparent); border:1px solid color-mix(in oklab, var(--brand) 40%, transparent); }
+
+    main { padding: 28px 0 40px; }
+
+    /* Two equal columns */
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    @media (max-width: 980px){ .grid { grid-template-columns: 1fr; } }
+
+    .card { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--border-2); border-radius: 22px; box-shadow: var(--shadow); overflow: hidden; }
+    .card h2 { margin:0 0 14px; font-size:18px; letter-spacing:.2px; }
+    .card .pad { padding: 18px; }
+
+    /* Form layout */
+    .row { display:grid; grid-template-columns: 150px 1fr; gap: 14px; align-items:center; margin: 12px 0; }
+    .row > :nth-child(2) { min-width: 0; }
+    @media (max-width: 640px){ .row { grid-template-columns: 1fr; } }
+
+    label { color: var(--ink-dim); font-weight: 600; }
+    input[type="text"], textarea, input[type="number"], input[type="range"], select, input[type="date"], input[type="password"] { box-sizing: border-box; max-width: 100%; }
+    input[type="text"], textarea, input[type="number"], input[type="date"], input[type="password"] { width: 100%; color: var(--ink); background: color-mix(in oklab, var(--panel) 88%, white 0%); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; outline: none; transition: border .2s, box-shadow .2s; }
+    input[type="text"]:focus, textarea:focus, input[type="number"]:focus, input[type="date"]:focus, input[type="password"]:focus { border-color: var(--brand-2); box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 25%, transparent); }
+    textarea { min-height: 120px; resize: vertical; }
+
+    .range { display:grid; grid-template-columns: 1fr auto; gap: 10px; align-items:center; }
+    input[type="range"]{ width:100%; }
+    .bubble { min-width: 42px; text-align:center; padding:6px 10px; border-radius: 10px; background: var(--pill-bg); border: 1px solid var(--pill-border); font-weight:700; }
+
+    .chip-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip { padding:6px 10px; border-radius: 999px; border:1px solid var(--border); background: var(--pill-bg); cursor:pointer; user-select:none; }
+    .chip.active { outline:2px solid var(--brand); background: color-mix(in oklab, var(--brand) 18%, transparent); }
+
+    .btn { appearance:none; border:none; cursor:pointer; font-weight: 800; letter-spacing:.3px; padding: 12px 16px; border-radius: 14px; color:#fff; background: linear-gradient(140deg, var(--brand), var(--brand-2)); box-shadow: var(--shadow); transition: transform .04s ease-in-out, filter .2s; }
+    .btn:hover { filter: brightness(1.06); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.secondary { background: var(--pill-bg); border: 1px solid var(--border); color: var(--ink); }
+    .btn.danger { background: var(--danger); color: #fff; }
+
+    .muted { color: var(--ink-muted); }
+
+    .stats { display:flex; flex-wrap:wrap; gap:10px; }
+    .stat { display:grid; gap:4px; padding:10px 12px; border-radius:12px; background: var(--pill-bg); border:1px solid var(--border); min-width: 150px; }
+
+    .toolbar { display:flex; flex-wrap:wrap; gap:18px; align-items:flex-start; justify-content: space-between; margin: 0 0 12px; }
+    .toolbar .left { display:flex; gap:10px; align-items:center; }
+
+    .controls-stack { display:grid; gap:8px; min-width: 260px; }
+    .control-row { display:flex; align-items:center; gap:8px; }
+    .control-row label { width: 70px; color: var(--ink-muted); }
+    .control-row input, .control-row select { flex:1; }
+
+    /* Gauges */
+    .gauge-row { display:flex; gap:14px; flex-wrap:wrap; margin: 14px 0 24px; }
+    .gauge-semi { width: 180px; position: relative; }
+    .gauge-semi svg { width: 100%; height: auto; display: block; }
+    .gauge-semi .center { position:absolute; left:50%; top:66%; transform:translateX(-50%); text-align:center; }
+    .gauge-semi .value { font-size: 22px; font-weight: 800; }
+    .gauge-semi .label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+    .arc-track { fill:none; stroke: var(--border); stroke-width: 14; stroke-linecap: round; }
+    .arc-value { fill:none; stroke: var(--brand); stroke-width: 14; stroke-linecap: round; transition: stroke-dasharray .3s ease; }
+    .needle { stroke: var(--brand-2); stroke-width: 2.5; transform-origin: 100px 110px; transition: transform .35s ease; }
+    .hub { fill: rgba(255,255,255,.9); }
+
+    /* Single-column list of teammate updates */
+    .updates-grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    .update-card { padding: 14px; border-radius: 14px; background: color-mix(in oklab, var(--panel) 94%, white 0%); border: 1px solid var(--border); }
+    .update-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+    .who { font-weight:800; letter-spacing:.3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .when { color: var(--ink-muted); font-size:12px; }
+
+    /* Badge chips for speaking state */
+    .tag { display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; border:1px solid var(--pill-border); background: var(--pill-bg); font-size:11px; font-weight:700; }
+    .tag.live { border-color: color-mix(in oklab, var(--brand-2) 40%, transparent); background: color-mix(in oklab, var(--brand-2) 18%, transparent); }
+    .tag.spoken { opacity:.85; }
+
+    .reactions { display:flex; gap:8px; margin-top:10px; }
+    .react-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid var(--pill-border); background: var(--pill-bg); cursor:pointer; font-weight:800; color: var(--ink); }
+    .react-btn .cnt { font-variant-numeric: tabular-nums; min-width: 1ch; text-align:right; color: var(--ink); }
+    .react-btn.active { outline:2px solid var(--brand-2); }
+
+    .export-bar { display:flex; gap:10px; justify-content:flex-end; margin-top: 16px; }
+
+    /* Timers */
+    .timer-block { padding: 12px; border-radius: 16px; border: 1px solid var(--border); background: color-mix(in oklab, var(--panel) 94%, white 0%); margin-bottom: 14px; }
+    .timer-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 6px; }
+    .timer-header h3 { margin:0; font-size: 16px; }
+    .timer-controls { display:flex; align-items:center; gap:8px; }
+    .timer-controls input { width: 120px; text-align:center; }
+    .timer-display { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; font-size: 44px; font-weight: 800; letter-spacing: 1px; text-align:center; padding: 8px 0; border-radius: 12px; }
+    .timer-buttons { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+    /* Flash red when overtime */
+    .overtime { color: var(--danger) !important; animation: pulseRed .8s ease-in-out infinite; }
+    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(255,77,79,0.0); background: transparent; }
+                          50% { box-shadow: 0 0 0 6px rgba(255,77,79,0.18); background: rgba(255,77,79,0.10); }
+                         100% { box-shadow: 0 0 0 0 rgba(255,77,79,0.0); background: transparent; }
+    }
+
+    /* Collapsibles */
+    details { border:1px solid var(--border); border-radius: 14px; padding: 10px 12px; background: color-mix(in oklab, var(--panel) 94%, white 0%); }
+    details + details { margin-top: 12px; }
+    details summary { cursor: pointer; user-select:none; font-weight: 800; color: var(--ink-dim); }
+  </style>
+</head>
+<body data-theme="dark">
+  <header>
+    <div class="wrap bar">
+      <div class="logo" aria-hidden="true">RT</div>
+      <h1 class="title">Round Table <small id="teamNameDisplay">Team</small></h1>
+      <div class="spacer"></div>
+
+      <!-- Multi-team switcher populated from GitHub only -->
+      <div class="pill" title="Switch team context">
+        <label for="teamSwitcher" class="muted" style="margin-right:6px;">Team</label>
+        <select id="teamSwitcher"></select>
+      </div>
+
+      <!-- Passphrase (next to team picker) -->
+      <div class="pill" title="Enter passphrase for selected team">
+        <label for="teamPassInput" class="muted">Passphrase</label>
+        <input id="teamPassInput" class="pass-input" type="password" placeholder="Enter pass…" style="width: 150px;" />
+        <span id="passMsg" class="muted" aria-live="polite"></span>
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="pill mode-toggle" role="group" aria-label="Mode">
+        <button id="modeUserBtn" class="seg active" type="button">User</button>
+        <button id="modeFacBtn" class="seg" type="button">Facilitator</button>
+      </div>
+
+      <!-- Theme toggle -->
+      <button id="themeToggle" class="pill theme-toggle" type="button" aria-pressed="false" title="Toggle light/dark theme">
+        <span id="themeIcon" aria-hidden="true">🌙</span>
+        <span id="themeName">Dark</span>
+      </button>
+
+      <div class="pill" title="Live sync status">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle id="liveDot" cx="5" cy="5" r="5" fill="#8e9bd6"/></svg>
+        <span id="liveLabel" class="muted">Idle</span>
+      </div>
+      <div class="pill" title="Live since last reload">
+        <span class="muted">Live since</span>
+        <span id="liveSinceTicker">0s</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap grid">
+      <!-- LEFT COLUMN: User / Facilitator sections -->
+
+      <!-- User section -->
+      <section id="userSection" class="card" aria-labelledby="myUpdateHeading">
+        <div class="pad">
+          <h2 id="myUpdateHeading">Your update</h2>
+
+          <form id="updateForm" novalidate>
+            <div class="row">
+              <label for="nameInput">Your name</label>
+              <input id="nameInput" name="name" type="text" placeholder="e.g. Alex Taylor" autocomplete="name" required />
+            </div>
+
+            <div class="row">
+              <label for="sessionInput">Session</label>
+              <input id="sessionInput" name="session" type="date" />
+            </div>
+
+            <div class="row">
+              <label for="feelingInput">How are you feeling?</label>
+              <div>
+                <div class="range">
+                  <input id="feelingInput" name="feeling" type="range" min="1" max="10" step="1" value="5" />
+                  <div class="bubble" id="feelingBubble" aria-live="polite">5</div>
+                </div>
+                <div class="chip-row" aria-label="Mood quick select">
+                  <span class="chip" data-feel="2">😞 2</span>
+                  <span class="chip" data-feel="4">😐 4</span>
+                  <span class="chip" data-feel="6">🙂 6</span>
+                  <span class="chip" data-feel="8">😄 8</span>
+                  <span class="chip" data-feel="10">🤩 10</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <label for="productivityInput">How productive do you feel?</label>
+              <div class="range">
+                <input id="productivityInput" name="productivity" type="range" min="1" max="10" step="1" value="5" />
+                <div class="bubble" id="productivityBubble" aria-live="polite">5</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <label for="updateInput">Topics / notes</label>
+              <textarea id="updateInput" name="update" placeholder="What would you like to share with the team? What's behind your scores?" maxlength="5000"></textarea>
+            </div>
+
+            <div class="row" style="align-items:flex-start;">
+              <div></div>
+              <div>
+                <button id="submitBtn" type="submit" class="btn">Save my update</button>
+                <button id="clearBtn" type="button" class="btn secondary">Clear</button>
+                <div id="saveStatus" class="statusline" role="status" aria-live="polite"></div>
+              </div>
+            </div>
+          </form>
+
+          <hr class="divider" />
+          <h3 class="muted" style="margin:10px 0 6px;">My last submission</h3>
+          <div class="update-card" id="myLastCard">No submission yet.</div>
+        </div>
+      </section>
+
+      <!-- Facilitator section -->
+      <section id="facilitatorSection" class="card" aria-labelledby="facHeading" hidden>
+        <div class="pad">
+          <h2 id="facHeading">Facilitator</h2>
+
+          <!-- Meeting total countdown (default 45 minutes) -->
+          <div class="timer-block" aria-label="Meeting countdown">
+            <div class="timer-header">
+              <h3>Meeting timer</h3>
+              <div class="timer-controls">
+                <label class="muted" for="meetingMinutesInput">Minutes</label>
+                <input id="meetingMinutesInput" type="number" min="1" max="600" value="45" />
+              </div>
+            </div>
+            <div class="timer-display" id="meetingDisplay">45:00</div>
+            <div class="timer-buttons">
+              <button id="meetingStart" class="btn" type="button">Start</button>
+              <button id="meetingStop" class="btn secondary" type="button">Stop</button>
+              <button id="meetingReset" class="btn secondary" type="button">Reset</button>
+            </div>
+          </div>
+
+          <!-- Speaker stopwatch / countdown (dynamic default minutes) -->
+          <div class="timer-block" aria-label="Speaker timer">
+            <div class="timer-header">
+              <h3>Speaker timer</h3>
+              <div class="timer-controls">
+                <label class="muted" for="speakerMinutesInput">Minutes</label>
+                <input id="speakerMinutesInput" type="number" min="0.1" max="60" step="0.1" value="2" />
+              </div>
+            </div>
+            <div class="timer-display" id="speakerDisplay">02:00</div>
+            <div class="timer-buttons">
+              <button id="speakerStart" class="btn" type="button">Start</button>
+              <button id="speakerStop" class="btn secondary" type="button">Stop</button>
+              <button id="speakerClear" class="btn secondary" type="button">Clear</button>
+            </div>
+          </div>
+
+          <!-- Speaker ordering controls -->
+          <div class="timer-block" aria-label="Speaker order controls">
+            <div class="timer-header">
+              <h3>Speaker order</h3>
+              <div class="muted" id="speakerCounts">Remaining: 0 • Spoken: 0</div>
+            </div>
+            <div class="timer-buttons">
+              <button id="nextSpeakerBtn" class="btn" type="button">Next Speaker</button>
+              <button id="speakerFinishedBtn" class="btn secondary" type="button">Speaker Finished</button>
+              <button id="clearSpokenBtn" class="btn secondary" type="button">Clear All</button>
+            </div>
+          </div>
+
+          <!-- Admin tools at the bottom: collapsibles -->
+          <details id="adminCreateDetails">
+            <summary>Create team</summary>
+            <div class="timer-controls" style="gap:10px; flex-wrap:wrap; margin-top:10px;">
+              <input id="newTeamInput" type="text" placeholder="e.g. Growth Squad" style="min-width:220px;" />
+              <input id="newTeamPassInput" type="password" placeholder="Passphrase (optional)" style="min-width:220px;" />
+              <button id="addTeamBtn" class="btn" type="button">Add</button>
+              <span class="muted">Writes the team to the GitHub registry so everyone sees it.</span>
+            </div>
+          </details>
+
+          <details id="adminDeleteDetails">
+            <summary>Bulk delete (danger)</summary>
+            <div style="display:grid; gap:12px; margin-top:10px;">
+              <div class="timer-block" style="margin:0;">
+                <div class="timer-header">
+                  <h3>Delete a session (current team)</h3>
+                  <span class="muted">Removes all files for the selected <b>session</b> in the current team.</span>
+                </div>
+                <div class="timer-controls" style="gap:10px; flex-wrap:wrap;">
+                  <label class="muted" for="delSessionSelect">Session</label>
+                  <select id="delSessionSelect"></select>
+                  <button id="deleteSessionBtn" class="btn danger" type="button" title="Delete all files for this session">Delete session</button>
+                </div>
+              </div>
+
+              <div class="timer-block" style="margin:0;">
+                <div class="timer-header">
+                  <h3>Delete a team</h3>
+                  <span class="muted">Removes <b>all files</b> for the selected team (all sessions).</span>
+                </div>
+                <div class="timer-controls" style="gap:10px; flex-wrap:wrap;">
+                  <label class="muted" for="delTeamSelect">Team</label>
+                  <select id="delTeamSelect"></select>
+                  <button id="deleteTeamBtn" class="btn danger" type="button" title="Delete all files for this team">Delete team</button>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Team Snapshot -->
+      <aside class="card" aria-labelledby="summaryHeading">
+        <div class="pad">
+          <h2 id="summaryHeading">Team snapshot</h2>
+
+          <div class="stats" style="margin-bottom:12px; display:none;">
+            <div class="stat"><span class="muted">Average feeling</span><b id="avgFeeling">—</b></div>
+            <div class="stat"><span class="muted">Average productivity</span><b id="avgProductivity">—</b></div>
+          </div>
+          <div class="stats" style="margin-bottom:12px;">
+            <div class="stat"><span class="muted">Updates</span><b id="updatesCount">0</b></div>
+          </div>
+
+          <!-- Semi-arc Gauges with needle (blue/green) -->
+          <div class="gauge-row">
+            <div class="gauge-semi" id="gaugeFeeling" role="img" aria-label="Average feeling" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+              <svg viewBox="0 0 200 120" aria-hidden="true">
+                <defs>
+                  <linearGradient id="gradFeeling" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#4b6bfb"/>
+                    <stop offset="100%" stop-color="#2ecc71"/>
+                  </linearGradient>
+                </defs>
+                <path class="arc-track" d="M10,110 A90,90 0 0 1 190,110"/>
+                <path class="arc-value" id="gaugeFeelingArc" d="M10,110 A90,90 0 0 1 190,110" stroke="url(#gradFeeling)" pathLength="100" stroke-dasharray="0 100"/>
+                <line class="needle" id="gaugeFeelingNeedle" x1="100" y1="110" x2="100" y2="28" transform="rotate(-90 100 110)"/>
+                <circle class="hub" cx="100" cy="110" r="4"/>
+              </svg>
+              <div class="center">
+                <div class="value" id="gaugeFeelingVal">—</div>
+                <div class="label">Feeling</div>
+              </div>
+            </div>
+            <div class="gauge-semi" id="gaugeProductivity" role="img" aria-label="Average productivity" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+              <svg viewBox="0 0 200 120" aria-hidden="true">
+                <defs>
+                  <linearGradient id="gradProd" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#4b6bfb"/>
+                    <stop offset="100%" stop-color="#2ecc71"/>
+                  </linearGradient>
+                </defs>
+                <path class="arc-track" d="M10,110 A90,90 0 0 1 190,110"/>
+                <path class="arc-value" id="gaugeProductivityArc" d="M10,110 A90,90 0 0 1 190,110" stroke="url(#gradProd)" pathLength="100" stroke-dasharray="0 100"/>
+                <line class="needle" id="gaugeProductivityNeedle" x1="100" y1="110" x2="100" y2="28" transform="rotate(-90 100 110)"/>
+                <circle class="hub" cx="100" cy="110" r="4"/>
+              </svg>
+              <div class="center">
+                <div class="value" id="gaugeProductivityVal">—</div>
+                <div class="label">Productivity</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="left">
+              <button id="manualRefreshBtn" class="btn secondary" type="button">Refresh now</button>
+              <span class="muted">Last refresh: <span id="lastRefresh">never</span></span>
+            </div>
+            <div class="controls-stack">
+              <div class="control-row">
+                <label class="muted" for="sessionFilter">Session</label>
+                <input id="sessionFilter" type="date" />
+              </div>
+              <div class="control-row">
+                <label class="muted" for="filterInput">Filter</label>
+                <input id="filterInput" type="text" placeholder="Find by name or text…" />
+              </div>
+              <div class="control-row">
+                <label class="muted" for="sortBySelect">Sort</label>
+                <select id="sortBySelect">
+                  <option value="updated_desc">Newest</option>
+                  <option value="updated_asc">Oldest</option>
+                  <option value="name_asc">Name A→Z</option>
+                  <option value="name_desc">Name Z→A</option>
+                  <option value="feeling_desc">Feeling High→Low</option>
+                  <option value="feeling_asc">Feeling Low→High</option>
+                  <option value="prod_desc">Productivity High→Low</option>
+                  <option value="prod_asc">Productivity Low→High</option>
+                </select>
+              </div>
+              <div class="control-row">
+                <label class="muted">Status</label>
+                <div class="pill mode-toggle" id="spokenSeg" role="group" aria-label="Spoken filter">
+                  <button class="seg spk active" data-sfilter="all" id="spkAllBtn" type="button">All</button>
+                  <button class="seg spk" data-sfilter="ready" id="spkReadyBtn" type="button">Not yet spoken</button>
+                  <button class="seg spk" data-sfilter="spoken" id="spkSpokenBtn" type="button">Spoken</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="updates-grid" id="updatesGrid" aria-live="polite" aria-busy="false">
+            <!-- teammate update cards render here (single column) -->
+          </div>
+
+          <div class="export-bar">
+            <button id="exportCsvBtn" class="btn secondary" type="button" title="Export CSV of current session">Export CSV</button>
+            <button id="exportJsonBtn" class="btn secondary" type="button" title="Export JSON of current session">Export JSON</button>
+            <a id="downloadAnchor" style="display:none;"></a>
+          </div>
+
+          <details class="settings" style="margin-top:14px;">
+            <summary>Diagnostics</summary>
+            <div class="settings-body">
+              <div class="settings-grid">
+                <div>
+                  <b>Token scope</b>
+                  <div id="diagTokenScope" class="muted">—</div>
+                </div>
+                <div>
+                  <b>Branch & directory</b>
+                  <div id="diagBranchDir" class="muted">—</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+                <button id="runDiagnosticsBtn" class="btn secondary" type="button">Run diagnostics</button>
+                <span id="diagStatus" class="statusline">Idle</span>
+              </div>
+              <div style="margin-top:8px;">
+                <b>Last API error</b>
+                <div id="lastApiError" class="update-card" style="background:color-mix(in oklab, var(--brand-2) 15%, transparent); border-color: color-mix(in oklab, var(--brand-2) 40%, transparent);">None</div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">Built for quick Round Table check‑ins.</div>
+  </footer>
+
+  <script src="roundtable.js" defer></script>
+</body>
+</html>
